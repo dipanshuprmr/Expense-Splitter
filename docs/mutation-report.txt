@@ -1,0 +1,18 @@
+Baseline (unmodified code): all tests pass
+
+M01  KILLED    src/money.js    allow zero amounts
+M02  KILLED    src/money.js    maximum amount off by one paisa
+M03  KILLED    src/money.js    Indian digit grouping becomes 3-digit grouping
+M04  KILLED    src/split.js    leftover paise go to the smallest remainder instead of the largest
+M05  KILLED    src/split.js    percentages below 100 are accepted
+M06  KILLED    src/split.js    exact amounts below the total are accepted
+M07  KILLED    src/split.js    duplicate participants are not detected
+M08  KILLED    src/ledger.js   settlement moves money in the wrong direction
+M09  KILLED    src/money.js    negative sign is ignored when parsing amounts
+M10  KILLED    src/ledger.js   smallest creditor matched first instead of the largest
+M11  KILLED    src/service.js  payer is no longer checked to be a group member
+M12  KILLED    src/service.js  self settlement is no longer rejected by the service
+M13  KILLED    src/service.js  whitespace in names is not normalised
+M14  KILLED    src/server.js   request body size limit effectively removed
+
+Mutation score: 14/14 mutants killed (100%)

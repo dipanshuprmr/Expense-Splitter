@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor U as User
+    participant UI as Web UI
+    participant API as HTTP API
+    participant S as Service
+    participant L as Split / Ledger logic
+    participant DB as SQLite
+
+    U->>UI: Fill in expense form, click Add
+    UI->>API: POST /api/groups/1/expenses (JSON)
+    API->>API: Parse JSON, check size limit
+    API->>S: addExpense(groupId, body)
+    S->>DB: Load group and members
+    S->>S: Validate description, payer, category, participants
+    S->>L: toMinor(amount), computeSplit(type, total, input)
+    L-->>S: Shares in paise (always sums to total)
+    S->>DB: BEGIN, insert expense and splits, COMMIT
+    S-->>API: Saved expense
+    API-->>UI: 201 Created (JSON)
+    UI->>API: GET /api/groups/1/balances
+    API->>S: getBalances(groupId)
+    S->>L: calculateBalances, simplifyDebts
+    L-->>S: Net balances and payment list
+    S-->>API: Balances JSON
+    API-->>UI: 200 OK
+    UI-->>U: Updated balances and "who pays whom"

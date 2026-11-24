@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph L1["Level 1: Unit tests (UT)"]
+        U1["money.js<br/>10 tests"]
+        U2["split.js<br/>25 tests"]
+        U3["ledger.js<br/>18 tests"]
+    end
+    subgraph L2["Level 2: Property-based tests (PT)"]
+        P1["9 properties x 1000 random inputs<br/>sums always match, balances always zero,<br/>simplified payments always settle everyone"]
+    end
+    subgraph L3["Level 3: Integration tests (IT)"]
+        I1["Service + real SQLite<br/>rules, atomicity, group isolation"]
+        I2["Database constraints<br/>rollback, foreign keys, cascade"]
+    end
+    subgraph L4["Level 4: End-to-end API tests (E2E)"]
+        E1["Real HTTP server<br/>full user journeys, error codes,<br/>security and robustness checks"]
+    end
+    subgraph L5["Test quality checks"]
+        Q1["Coverage report"]
+        Q2["Mutation check<br/>14 deliberate bugs"]
+    end
+    L1 --> L2 --> L3 --> L4 --> L5

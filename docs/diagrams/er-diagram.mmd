@@ -1,0 +1,40 @@
+erDiagram
+    GROUPS ||--o{ MEMBERS : has
+    GROUPS ||--o{ EXPENSES : contains
+    GROUPS ||--o{ SETTLEMENTS : records
+    MEMBERS ||--o{ EXPENSES : "pays (paid_by)"
+    EXPENSES ||--|{ EXPENSE_SPLITS : "divided into"
+    MEMBERS ||--o{ EXPENSE_SPLITS : "owes share"
+    MEMBERS ||--o{ SETTLEMENTS : "from / to"
+
+    GROUPS {
+        int id PK
+        text name
+        text created_at
+    }
+    MEMBERS {
+        int id PK
+        int group_id FK
+        text name "unique per group, case-insensitive"
+    }
+    EXPENSES {
+        int id PK
+        int group_id FK
+        text description
+        int amount "paise, must be > 0"
+        int paid_by FK
+        text split_type "equal, exact, percent, shares"
+        text category
+    }
+    EXPENSE_SPLITS {
+        int expense_id PK, FK
+        int member_id PK, FK
+        int amount "paise, share owed"
+    }
+    SETTLEMENTS {
+        int id PK
+        int group_id FK
+        int from_member FK
+        int to_member FK
+        int amount "paise, must be > 0"
+    }

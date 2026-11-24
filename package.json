@@ -1,0 +1,16 @@
+{
+  "name": "expense-splitter",
+  "version": "1.0.0",
+  "description": "Splitwise-style group expense splitter with debt simplification, built for a software design and testing assignment",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"tests/**/*.test.js\"",
+    "test:verbose": "node --disable-warning=ExperimentalWarning --test --test-reporter=spec \"tests/**/*.test.js\"",
+    "coverage": "node --disable-warning=ExperimentalWarning --experimental-test-coverage --test --test-reporter=spec \"tests/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "license": "MIT"
+}

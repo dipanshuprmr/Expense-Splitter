@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph Client["Client"]
+        UI["Web UI<br/>public/index.html<br/>(HTML + JavaScript)"]
+    end
+    subgraph Server["Node.js server"]
+        API["HTTP API layer<br/>src/server.js<br/>routing, JSON parsing,<br/>error to status mapping"]
+        SVC["Service layer<br/>src/service.js<br/>business rules and validation"]
+        subgraph Logic["Pure logic (no I/O)"]
+            MONEY["money.js<br/>parse and format paise"]
+            SPLIT["split.js<br/>equal, exact, percent, shares"]
+            LEDGER["ledger.js<br/>balances and debt simplification"]
+        end
+        DBL["Data layer<br/>src/db.js<br/>schema and transactions"]
+    end
+    DB[("SQLite database")]
+
+    UI -- "REST / JSON over HTTP" --> API
+    API --> SVC
+    SVC --> MONEY
+    SVC --> SPLIT
+    SVC --> LEDGER
+    SVC --> DBL
+    DBL --> DB

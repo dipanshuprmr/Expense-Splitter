@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expense Splitter</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f5f4ef; --card: #ffffff; --ink: #1f2a24; --muted: #66726b; --line: #e3e1d8;
+    --accent: #1f7a5a; --accent-ink: #ffffff; --pos: #1f7a5a; --neg: #b3402f; --warn-bg: #fbeceb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 24px; border-bottom: 1px solid var(--line); background: var(--card); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  h2 { margin: 0 0 14px; font-size: 17px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  input, select, button { font: inherit; }
+  input[type=text], input[type=number], select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { cursor: pointer; border: 0; border-radius: 8px; padding: 9px 14px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 500; }
+  button.danger { background: transparent; color: var(--neg); border: 1px solid var(--line); padding: 4px 8px; font-size: 13px; font-weight: 500; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 10px; align-items: end; }
+  .row > * { flex: 1; }
+  .row > button { flex: 0 0 auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pos { color: var(--pos); font-weight: 600; } .neg { color: var(--neg); font-weight: 600; }
+  .error { background: var(--warn-bg); color: var(--neg); border: 1px solid #efc7c2; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; }
+  .empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
+  .parts { display: grid; gap: 6px; margin-top: 4px; }
+  .part { display: grid; grid-template-columns: 24px 1fr 110px; gap: 8px; align-items: center; }
+  .part input[type=checkbox] { width: 18px; height: 18px; }
+  .pay { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .pay:last-child { border-bottom: 0; }
+  .total { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Expense Splitter</h1>
+  <span class="sub" id="groupLabel">Split group expenses fairly</span>
+</header>
+<main>
+  <div id="error" class="error hidden" role="alert"></div>
+
+  <!-- Step 1: create a group -->
+  <section id="createView">
+    <h2>Create a group</h2>
+    <label for="gname">Group name</label>
+    <input type="text" id="gname" placeholder="Goa trip" maxlength="100">
+    <label for="gmembers">Members (comma separated)</label>
+    <input type="text" id="gmembers" placeholder="Rahul, Priya, Amit, Neha">
+    <p><button id="createBtn">Create group</button></p>
+  </section>
+
+  <!-- Step 2: use the group -->
+  <div id="groupView" class="hidden">
+    <div class="grid">
+      <section>
+        <h2>Add an expense</h2>
+        <label for="desc">Description</label>
+        <input type="text" id="desc" placeholder="Dinner at the beach shack" maxlength="200">
+        <div class="row">
+          <div><label for="amount">Amount (₹)</label><input type="number" id="amount" min="0" step="0.01" placeholder="1200"></div>
+          <div><label for="payer">Paid by</label><select id="payer"></select></div>
+        </div>
+        <div class="row">
+          <div><label for="category">Category</label><select id="category"></select></div>
+          <div><label for="splitType">Split</label>
+            <select id="splitType">
+              <option value="equal">Equally</option>
+              <option value="exact">Exact amounts</option>
+              <option value="percent">Percentages</option>
+              <option value="shares">Shares</option>
+            </select>
+          </div>
+        </div>
+        <label id="partsLabel">Split between</label>
+        <div class="parts" id="parts"></div>
+        <p><button id="addExpenseBtn">Add expense</button></p>
+      </section>
+
+      <section>
+        <h2>Balances</h2>
+        <div class="total" id="totalSpent"></div>
+        <table>
+          <thead><tr><th>Member</th><th class="num">Net</th></tr></thead>
+          <tbody id="balances"></tbody>
+        </table>
+        <h2 style="margin-top:20px">Settle up</h2>
+        <div id="simplified"></div>
+        <h2 style="margin-top:20px">Add a member</h2>
+        <div class="row">
+          <div><input type="text" id="newMember" placeholder="Name" maxlength="50" aria-label="New member name"></div>
+          <button class="ghost" id="addMemberBtn">Add</button>
+        </div>
+      </section>
+    </div>
+
+    <section>
+      <h2>Expenses</h2>
+      <table>
+        <thead><tr><th>Description</th><th>Paid by</th><th>Split</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody id="expenses"></tbody>
+      </table>
+      <div class="empty hidden" id="noExpenses">No expenses yet.</div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  let group = null;
+
+  function inr(minor) {
+    const neg = minor < 0 ? '-' : '';
+    const abs = Math.abs(minor);
+    return neg + '₹' + Math.floor(abs / 100).toLocaleString('en-IN') + '.' + String(abs % 100).padStart(2, '0');
+  }
+
+  async function api(method, url, body) {
+    const res = await fetch(url, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ? data.error.message : 'Request failed');
+    return data;
+  }
+
+  function showError(message) {
+    const el = $('error');
+    el.textContent = message || '';
+    el.classList.toggle('hidden', !message);
+  }
+
+  async function guarded(fn) {
+    try { showError(''); await fn(); } catch (e) { showError(e.message); }
+  }
+
+  function option(value, label) {
+    const o = document.createElement('option');
+    o.value = value; o.textContent = label; return o;
+  }
+
+  function cell(text, cls) {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (cls) td.className = cls;
+    return td;
+  }
+
+  function renderParts() {
+    const type = $('splitType').value;
+    const hint = { equal: '', exact: 'amount in ₹', percent: '%', shares: 'shares' }[type];
+    $('partsLabel').textContent = type === 'equal' ? 'Split between' : 'Split between (' + hint + ')';
+    const box = $('parts');
+    box.textContent = '';
+    group.members.forEach((m) => {
+      const row = document.createElement('div');
+      row.className = 'part';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = true; cb.dataset.id = m.id; cb.setAttribute('aria-label', 'Include ' + m.name);
+      const name = document.createElement('span'); name.textContent = m.name;
+      row.append(cb, name);
+      if (type !== 'equal') {
+        const v = document.createElement('input');
+        v.type = 'number'; v.step = type === 'shares' ? '1' : '0.01'; v.min = '0'; v.dataset.value = m.id;
+        v.placeholder = hint; v.setAttribute('aria-label', 'Value for ' + m.name);
+        row.append(v);
+      }
+      box.append(row);
+    });
+  }
+
+  function renderMembers() {
+    const payer = $('payer');
+    payer.textContent = '';
+    group.members.forEach((m) => payer.append(option(m.id, m.name)));
+    renderParts();
+  }
+
+  async function refresh() {
+    group = await api('GET', '/api/groups/' + group.id);
+    $('groupLabel').textContent = group.name + ' · group #' + group.id;
+    renderMembers();
+
+    const [expenses, bal] = await Promise.all([
+      api('GET', '/api/groups/' + group.id + '/expenses'),
+      api('GET', '/api/groups/' + group.id + '/balances'),
+    ]);
+    const nameOf = Object.fromEntries(group.members.map((m) => [m.id, m.name]));
+
+    const tbody = $('expenses');
+    tbody.textContent = '';
+    expenses.forEach((e) => {
+      const tr = document.createElement('tr');
+      tr.append(cell(e.description), cell(nameOf[e.paidBy] || '?'), cell(e.splitType + ' · ' + e.splits.length + ' people'), cell(e.amountFormatted, 'num'));
+      const act = document.createElement('td');
+      const del = document.createElement('button');
+      del.className = 'danger'; del.textContent = 'Delete';
+      del.addEventListener('click', () => guarded(async () => {
+        await api('DELETE', '/api/groups/' + group.id + '/expenses/' + e.id);
+        await refresh();
+      }));
+      act.append(del); tr.append(act); tbody.append(tr);
+    });
+    $('noExpenses').classList.toggle('hidden', expenses.length > 0);
+
+    $('totalSpent').textContent = 'Total spent: ' + bal.totalSpentFormatted;
+    const bbody = $('balances');
+    bbody.textContent = '';
+    bal.balances.forEach((b) => {
+      const tr = document.createElement('tr');
+      const label = b.net > 0 ? 'gets back ' + inr(b.net) : b.net < 0 ? 'owes ' + inr(-b.net) : 'settled';
+      tr.append(cell(b.name), cell(label, 'num ' + (b.net > 0 ? 'pos' : b.net < 0 ? 'neg' : '')));
+      bbody.append(tr);
+    });
+
+    const simp = $('simplified');
+    simp.textContent = '';
+    if (bal.simplified.length === 0) {
+      const d = document.createElement('div'); d.className = 'empty'; d.textContent = 'Everyone is settled up.'; simp.append(d);
+    }
+    bal.simplified.forEach((p) => {
+      const row = document.createElement('div'); row.className = 'pay';
+      const t = document.createElement('span'); t.textContent = p.fromName + ' pays ' + p.toName + ' ' + p.amountFormatted;
+      const b = document.createElement('button'); b.className = 'ghost'; b.textContent = 'Mark paid';
+      b.addEventListener('click', () => guarded(async () => {
+        await api('POST', '/api/groups/' + group.id + '/settlements', { from: p.from, to: p.to, amount: p.amountDecimal });
+        await refresh();
+      }));
+      row.append(t, b); simp.append(row);
+    });
+  }
+
+  async function openGroup(id) {
+    group = { id };
+    $('createView').classList.add('hidden');
+    $('groupView').classList.remove('hidden');
+    await refresh();
+  }
+
+  $('createBtn').addEventListener('click', () => guarded(async () => {
+    const members = $('gmembers').value.split(',').map((s) => s.trim()).filter(Boolean);
+    const g = await api('POST', '/api/groups', { name: $('gname').value, members });
+    location.hash = '#/group/' + g.id;
+    await openGroup(g.id);
+  }));
+
+  $('splitType').addEventListener('change', renderParts);
+
+  $('addMemberBtn').addEventListener('click', () => guarded(async () => {
+    await api('POST', '/api/groups/' + group.id + '/members', { name: $('newMember').value });
+    $('newMember').value = '';
+    await refresh();
+  }));
+
+  $('addExpenseBtn').addEventListener('click', () => guarded(async () => {
+    const type = $('splitType').value;
+    const body = {
+      description: $('desc').value,
+      amount: $('amount').value,
+      paidBy: Number($('payer').value),
+      category: $('category').value,
+      splitType: type,
+    };
+    const checked = [...$('parts').querySelectorAll('input[type=checkbox]:checked')].map((c) => Number(c.dataset.id));
+    if (type === 'equal') {
+      body.participants = checked;
+    } else {
+      body.splits = {};
+      checked.forEach((id) => {
+        const v = $('parts').querySelector('input[data-value="' + id + '"]').value;
+        body.splits[id] = type === 'shares' ? Number(v) : v;
+      });
+    }
+    await api('POST', '/api/groups/' + group.id + '/expenses', body);
+    $('desc').value = ''; $('amount').value = '';
+    await refresh();
+  }));
+
+  (async function init() {
+    const meta = await api('GET', '/api/meta');
+    meta.categories.forEach((c) => $('category').append(option(c, c[0].toUpperCase() + c.slice(1))));
+    const m = location.hash.match(/^#\/group\/(\d+)$/);
+    if (m) await guarded(() => openGroup(Number(m[1])));
+  })();
+})();
+</script>
+</body>
+</html>
